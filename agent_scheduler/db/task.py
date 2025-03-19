@@ -52,11 +52,15 @@ class Task(TaskModel):
     params: str
 
     def __init__(self, **kwargs):
-        priority = kwargs.pop("priority", int(datetime.now(timezone.utc).timestamp() * 1000))
+        priority = kwargs.pop(
+            "priority", int(datetime.now(timezone.utc).timestamp() * 1000)
+        )
         super().__init__(priority=priority, **kwargs)
 
-    class Config(TaskModel.__config__):
-        exclude = ["script_params"]
+    model_config = {
+        **TaskModel.model_config,  # Inherit parent config
+        "exclude": {"script_params"},  # Add exclude setting
+    }
 
     @staticmethod
     def from_table(table: "TaskTable"):
@@ -101,11 +105,17 @@ class Task(TaskModel):
             status=json_obj.get("status", TaskStatus.PENDING),
             params=json.dumps(json_obj.get("params")),
             script_params=base64.b64decode(json_obj.get("script_params")),
-            priority=json_obj.get("priority", int(datetime.now(timezone.utc).timestamp() * 1000)),
+            priority=json_obj.get(
+                "priority", int(datetime.now(timezone.utc).timestamp() * 1000)
+            ),
             result=json_obj.get("result", None),
             bookmarked=json_obj.get("bookmarked", False),
-            created_at=datetime.fromtimestamp(json_obj.get("created_at", datetime.now(timezone.utc).timestamp())),
-            updated_at=datetime.fromtimestamp(json_obj.get("updated_at", datetime.now(timezone.utc).timestamp())),
+            created_at=datetime.fromtimestamp(
+                json_obj.get("created_at", datetime.now(timezone.utc).timestamp())
+            ),
+            updated_at=datetime.fromtimestamp(
+                json_obj.get("updated_at", datetime.now(timezone.utc).timestamp())
+            ),
         )
 
     def to_json(self):
@@ -137,7 +147,9 @@ class TaskTable(Base):
     params = Column(Text, nullable=False)  # task args
     script_params = Column(LargeBinary, nullable=False)  # script args
     priority = Column(Integer, nullable=False)
-    status = Column(String(20), nullable=False, default="pending")  # pending, running, done, failed
+    status = Column(
+        String(20), nullable=False, default="pending"
+    )  # pending, running, done, failed
     result = Column(Text)  # task result
     bookmarked = Column(Boolean, nullable=True, default=False)
     created_at = Column(
@@ -218,7 +230,11 @@ class TaskManager(BaseTableManager):
             else:
                 query = query.order_by(TaskTable.bookmarked.asc())
 
-            query = query.order_by(TaskTable.priority.asc() if order == "asc" else TaskTable.priority.desc())
+            query = query.order_by(
+                TaskTable.priority.asc()
+                if order == "asc"
+                else TaskTable.priority.desc()
+            )
 
             if limit:
                 query = query.limit(limit)
@@ -300,7 +316,9 @@ class TaskManager(BaseTableManager):
             result = session.get(TaskTable, id)
             if result:
                 if priority == 0:
-                    result.priority = self.__get_min_priority(status=TaskStatus.PENDING) - 1
+                    result.priority = (
+                        self.__get_min_priority(status=TaskStatus.PENDING) - 1
+                    )
                 elif priority == -1:
                     result.priority = int(datetime.now(timezone.utc).timestamp() * 1000)
                 else:

@@ -19,6 +19,7 @@ if logging.getLogger().hasHandlers():
     log = logging.getLogger("sd")
 else:
     import copy
+
     class ColoredFormatter(logging.Formatter):
         COLORS = {
             "DEBUG": "\033[0;36m",  # CYAN
@@ -105,9 +106,9 @@ def detect_control_net(root: gr.Blocks, submit: gr.Button):
     UiControlNetUnit = None
 
     dependencies: List[dict] = [
-        x
-        for x in root.dependencies
-        if x["trigger"] == "click" and submit._id in x["targets"]
+        x[0]
+        for x in list(zip(root.config["dependencies"], root.fns))
+        if x[0]["targets"][0][1] == "click" and submit._id in x[0]["targets"][0]
     ]
     for d in dependencies:
         if len(d["outputs"]) == 1:

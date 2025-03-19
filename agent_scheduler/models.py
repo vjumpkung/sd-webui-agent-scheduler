@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, ClassVar
 from pydantic import BaseModel, Field
 
 from modules import sd_samplers
@@ -18,8 +18,12 @@ def transform_to_utc_datetime(dt: datetime) -> datetime:
 
 
 class QueueStatusAPI(BaseModel):
-    limit: Optional[int] = Field(title="Limit", description="The maximum number of tasks to return", default=20)
-    offset: Optional[int] = Field(title="Offset", description="The offset of the tasks to return", default=0)
+    limit: Optional[int] = Field(
+        title="Limit", description="The maximum number of tasks to return", default=20
+    )
+    offset: Optional[int] = Field(
+        title="Offset", description="The offset of the tasks to return", default=0
+    )
 
 
 class TaskModel(BaseModel):
@@ -33,11 +37,17 @@ class TaskModel(BaseModel):
         title="Task Status",
         description="Either pending, running, done or failed",
     )
-    params: Dict[str, Any] = Field(title="Task Parameters", description="The parameters of the task in JSON format")
+    params: Dict[str, Any] = Field(
+        title="Task Parameters", description="The parameters of the task in JSON format"
+    )
     priority: Optional[int] = Field(title="Task Priority")
-    position: Optional[int] = Field(title="Task Position")
-    result: Optional[str] = Field(title="Task Result", description="The result of the task in JSON format")
-    bookmarked: Optional[bool] = Field(title="Is task bookmarked")
+    position: Optional[int] = Field(title="Task Position", default=None)
+    result: Optional[str] = Field(
+        title="Task Result",
+        description="The result of the task in JSON format",
+        default=None,
+    )
+    bookmarked: Optional[bool] = Field(title="Is task bookmarked", default=None)
     created_at: Optional[datetime] = Field(
         title="Task Created At",
         description="The time when the task was created",
@@ -50,7 +60,18 @@ class TaskModel(BaseModel):
     )
 
 
+def _customize_schema(schema: Dict[str, Any]) -> None:
+    """Customize the JSON schema by removing specific properties"""
+    props = schema.get("properties", {})
+    props.pop("send_images", None)
+    props.pop("save_images", None)
+
+
 class Txt2ImgApiTaskArgs(StableDiffusionTxt2ImgProcessingAPI):
+
+    def __init__():
+        print(Txt2ImgApiTaskArgs.model_config)
+
     checkpoint: Optional[str] = Field(
         None,
         title="Custom checkpoint.",
@@ -61,19 +82,19 @@ class Txt2ImgApiTaskArgs(StableDiffusionTxt2ImgProcessingAPI):
         title="Custom VAE.",
         description="Custom VAE. If not specified, the current VAE will be used.",
     )
-    sampler_index: Optional[str] = Field(sd_samplers.samplers[0].name, title="Sampler name", alias="sampler_name")
+    sampler_index: Optional[str] = Field(
+        sd_samplers.samplers[0].name, title="Sampler name", alias="sampler_name"
+    )
     callback_url: Optional[str] = Field(
         None,
         title="Callback URL",
         description="The callback URL to send the result to.",
     )
 
-    class Config(StableDiffusionTxt2ImgProcessingAPI.__config__):
-        @staticmethod
-        def schema_extra(schema: Dict[str, Any], model) -> None:
-            props = schema.get("properties", {})
-            props.pop("send_images", None)
-            props.pop("save_images", None)
+    model_config: ClassVar[dict] = {
+        **StableDiffusionTxt2ImgProcessingAPI.model_config,
+        "json_schema_extra": lambda schema: _customize_schema(schema),
+    }
 
 
 class Img2ImgApiTaskArgs(StableDiffusionImg2ImgProcessingAPI):
@@ -87,19 +108,19 @@ class Img2ImgApiTaskArgs(StableDiffusionImg2ImgProcessingAPI):
         title="Custom VAE.",
         description="Custom VAE. If not specified, the current VAE will be used.",
     )
-    sampler_index: Optional[str] = Field(sd_samplers.samplers[0].name, title="Sampler name", alias="sampler_name")
+    sampler_index: Optional[str] = Field(
+        sd_samplers.samplers[0].name, title="Sampler name", alias="sampler_name"
+    )
     callback_url: Optional[str] = Field(
         None,
         title="Callback URL",
         description="The callback URL to send the result to.",
     )
 
-    class Config(StableDiffusionImg2ImgProcessingAPI.__config__):
-        @staticmethod
-        def schema_extra(schema: Dict[str, Any], model) -> None:
-            props = schema.get("properties", {})
-            props.pop("send_images", None)
-            props.pop("save_images", None)
+    model_config: ClassVar[dict] = {
+        **StableDiffusionImg2ImgProcessingAPI.model_config,
+        "json_schema_extra": lambda schema: _customize_schema(schema),
+    }
 
 
 class QueueTaskResponse(BaseModel):
@@ -107,9 +128,15 @@ class QueueTaskResponse(BaseModel):
 
 
 class QueueStatusResponse(BaseModel):
-    current_task_id: Optional[str] = Field(title="Current Task Id", description="The on progress task id")
-    pending_tasks: List[TaskModel] = Field(title="Pending Tasks", description="The pending tasks in the queue")
-    total_pending_tasks: int = Field(title="Queue length", description="The total pending tasks in the queue")
+    current_task_id: Optional[str] = Field(
+        title="Current Task Id", description="The on progress task id"
+    )
+    pending_tasks: List[TaskModel] = Field(
+        title="Pending Tasks", description="The pending tasks in the queue"
+    )
+    total_pending_tasks: int = Field(
+        title="Queue length", description="The total pending tasks in the queue"
+    )
     paused: bool = Field(title="Paused", description="Whether the queue is paused")
 
     class Config:

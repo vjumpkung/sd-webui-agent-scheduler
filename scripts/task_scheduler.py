@@ -178,9 +178,9 @@ class Script(scripts.Script):
         generate = self.generate_button
         is_img2img = self.is_img2img
         dependencies: List[dict] = [
-            x
-            for x in root.dependencies
-            if x["trigger"] == "click" and generate._id in x["targets"]
+            x[0]
+            for x in list(zip(root.config["dependencies"], root.fns))
+            if x[0]["targets"][0][1] == "click" and generate._id in x[0]["targets"][0]
         ]
 
         dependency: dict = None
@@ -207,9 +207,9 @@ class Script(scripts.Script):
                 )
 
             fn_block = next(
-                fn
-                for fn in root.fns
-                if compare_components_with_ids(fn.inputs, dependency["inputs"])
+                v
+                for k, v in root.fns.items()
+                if compare_components_with_ids(v.inputs, dependency["inputs"])
             )
             fn = self.wrap_register_ui_task()
             inputs = fn_block.inputs.copy()
@@ -226,9 +226,9 @@ class Script(scripts.Script):
 
             if cnet_dependency is not None:
                 cnet_fn_block = next(
-                    fn
-                    for fn in root.fns
-                    if compare_components_with_ids(fn.inputs, cnet_dependency["inputs"])
+                    v
+                    for k, v in root.fns.items()
+                    if compare_components_with_ids(v.inputs, cnet_dependency["inputs"])
                 )
                 self.submit_button.click(
                     fn=UiControlNetUnit,
@@ -260,7 +260,7 @@ class Script(scripts.Script):
                     or checkpoint == ""
                     or checkpoint == checkpoint_current
                 ):
-                    checkpoint = [shared.sd_model.sd_checkpoint_info.title]
+                    checkpoint = [shared.opts.sd_model_checkpoint]
                 elif checkpoint == checkpoint_runtime:
                     checkpoint = [None]
                 elif checkpoint.endswith(" checkpoints)"):
@@ -531,6 +531,7 @@ def on_ui_tab(**_kwargs):
                             show_label=False,
                             columns=2,
                             object_fit="contain",
+                            interactive=False,
                         )
             with gr.Tab("Task History", id=1, elem_id="agent_scheduler_history_tab"):
                 with gr.Row(elem_id="agent_scheduler_history_wrapper"):
@@ -589,6 +590,7 @@ def on_ui_tab(**_kwargs):
                             columns=2,
                             preview=True,
                             object_fit="contain",
+                            interactive=False,
                         )
                         with gr.Row(
                             elem_id="agent_scheduler_history_result_actions",

@@ -1,22 +1,48 @@
 # Agent Scheduler
 
-Introducing AgentScheduler, an Automatic1111/Vladmandic Stable Diffusion Web UI extension to power up your image generation workflow!
+This version is porting to WebUI Forge by updating extension into pydantic 2 and gradio 4
+
+## Known Issue
+
+- Enqueue button not working properly in first time when launch WebUI Forge but you can refresh to make it working (idk why?)
+
+- Generation Info Gone
+
+- This Extension is only working in WebUI Forge something maybe not tested yet if you found issue please report in issue tab.
+
+## Description (TH)
+
+- Extension นี้เป็นการแปลงให้ WebUI Forge ใช้งานได้เท่านั้น อาจมีบางอย่างที่ยังไม่ได้เทส หากมีปัญหาโปรดแจ้งใน issue
 
 ## Table of Content
 
-- [Compatibility](#compatibility)
-- [Installation](#installation)
-  - [Using Vlad Fork](#using-vlads-webui-fork)
-  - [Using the built-in extension list](#using-the-built-in-extension-list)
-  - [Manual clone](#manual-clone)
-- [Functionality](#functionality-as-of-current-version)
-- [Settings](#extension-settings)
-- [API Access](#api-access)
-- [Troubleshooting](#troubleshooting)
-- [Road Map](#road-map)
-- [Contributing](#contributing)
-- [License](#license)
-- [Disclaimer](#disclaimer)
+- [Agent Scheduler](#agent-scheduler)
+  - [Known Issue](#known-issue)
+  - [Description (TH)](#description-th)
+  - [Table of Content](#table-of-content)
+  - [Compatibility](#compatibility)
+  - [Installation](#installation)
+    - [Using the built-in extension list](#using-the-built-in-extension-list)
+    - [Manual clone](#manual-clone)
+  - [Basic Features](#basic-features)
+  - [Hidden Features:](#hidden-features)
+      - [Queue all checkpoints at the same time](#queue-all-checkpoints-at-the-same-time)
+      - [Queue with a subset of checkpoints](#queue-with-a-subset-of-checkpoints)
+      - [Edit queued task](#edit-queued-task)
+  - [Extension Settings](#extension-settings)
+  - [API Access](#api-access)
+      - [Queue Task](#queue-task)
+      - [Download Results](#download-results)
+      - [API Callback](#api-callback)
+  - [Troubleshooting](#troubleshooting)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Disclaimer](#disclaimer)
+  - [CRAFTED BY THE PEOPLE BUILDING **SIPHER//AGI**, **PROTOGAIA**, **ATHERLABS** \& **SIPHER ODYSSEY**](#crafted-by-the-people-building-sipheragi-protogaia-atherlabs--sipher-odyssey)
+    - [About ProtoGAIA](#about-protogaia)
+    - [Current protoGAIA Features](#current-protogaia-features)
+    - [Target Audience](#target-audience)
+  - [🎉 Stay Tuned for Updates](#-stay-tuned-for-updates)
 
 ---
 
@@ -24,16 +50,11 @@ Introducing AgentScheduler, an Automatic1111/Vladmandic Stable Diffusion Web UI 
 
 This version of AgentScheduler is compatible with latest versions of:
 
-- A1111: [commit baf6946](https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/baf6946e06249c5af9851c60171692c44ef633e0)
-- Vladmandic: [commit 9726b4d](https://github.com/vladmandic/automatic/commit/9726b4d23cb63779964e1d4edff49dd2c9c11e51)
+- Forge : [commit c055f2d](https://github.com/lllyasviel/stable-diffusion-webui-forge/tree/c055f2d43b07cbfd87ac3da4899a6d7ee52ebab9)
 
-> Older versions may not working properly.
+> A1111 and Vlad not working anymore.
 
 ## Installation
-
-### Using Vlad's WebUI Fork
-
-The extension is already included in [Vlad fork](https://github.com/vladmandic/automatic)'s builtin extensions.
 
 ### Using the built-in extension list
 
