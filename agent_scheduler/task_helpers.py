@@ -13,7 +13,7 @@ from numpy import ndarray
 from torch import Tensor
 
 from modules import sd_samplers, scripts, shared, sd_vae, images, txt2img, img2img
-from modules.generation_parameters_copypaste import create_override_settings_dict
+from modules.infotext_utils import create_override_settings_dict
 from modules.sd_models import CheckpointInfo, get_closet_checkpoint_match
 from modules.api.models import (
     StableDiffusionTxt2ImgProcessingAPI,
@@ -31,9 +31,15 @@ img2img_image_args_by_mode: Dict[int, List[List[str]]] = {
 }
 
 
-def get_script_by_name(script_name: str, is_img2img: bool = False, is_always_on: bool = False) -> scripts.Script:
+def get_script_by_name(
+    script_name: str, is_img2img: bool = False, is_always_on: bool = False
+) -> scripts.Script:
     script_runner = scripts.scripts_img2img if is_img2img else scripts.scripts_txt2img
-    available_scripts = script_runner.alwayson_scripts if is_always_on else script_runner.selectable_scripts
+    available_scripts = (
+        script_runner.alwayson_scripts
+        if is_always_on
+        else script_runner.selectable_scripts
+    )
 
     return next(
         (s for s in available_scripts if s.title().lower() == script_name.lower()),
@@ -70,7 +76,7 @@ def encode_image_to_base64(image):
         if geninfo:
             image.save(output_bytes, format="PNG", pnginfo=pnginfo)
         else:
-            image.save(output_bytes, format="PNG") # remove pnginfo to save space
+            image.save(output_bytes, format="PNG")  # remove pnginfo to save space
         bytes_data = output_bytes.getvalue()
         return "data:image/png;base64," + base64.b64encode(bytes_data).decode("utf-8")
 
@@ -84,7 +90,9 @@ def serialize_image(image):
     elif isinstance(image, torch.Tensor):
         shape = image.shape
         dtype = image.dtype
-        data = base64.b64encode(zlib.compress(image.detach().numpy().tobytes())).decode()
+        data = base64.b64encode(
+            zlib.compress(image.detach().numpy().tobytes())
+        ).decode()
         return {
             "shape": shape,
             "data": data,
@@ -125,7 +133,9 @@ def deserialize_image(image_str):
             shape = tuple(image_str["shape"])
             dtype = np.dtype(image_str.get("dtype", "uint8"))
             image_np = np.frombuffer(data, dtype=dtype)
-            return torch.from_numpy(image_np.reshape(shape)).to(device=image_str.get("device", "cpu"))
+            return torch.from_numpy(image_np.reshape(shape)).to(
+                device=image_str.get("device", "cpu")
+            )
         else:
             size = tuple(image_str["size"])
             mode = image_str["mode"]
@@ -195,7 +205,7 @@ def serialize_script_args(script_args: List):
     return zlib.compress(pickle.dumps(script_args))
 
 
-def deserialize_script_args(script_args: Union[bytes, List], UiControlNetUnit = None):
+def deserialize_script_args(script_args: Union[bytes, List], UiControlNetUnit=None):
     if type(script_args) is bytes:
         script_args = pickle.loads(zlib.decompress(script_args))
 
@@ -208,15 +218,17 @@ def deserialize_script_args(script_args: Union[bytes, List], UiControlNetUnit = 
                 for k, v in unit.items():
                     if isinstance(getattr(u, k, None), Enum):
                         # check if v is a valid enum value
-                        enum_obj: Enum= getattr(u, k)
+                        enum_obj: Enum = getattr(u, k)
                         if v not in [e.value for e in enum_obj.__class__]:
-                            log.error(f"Invalid enum value {v} for {k} encountered, valid value is {enum_obj.__class__}")
+                            log.error(
+                                f"Invalid enum value {v} for {k} encountered, valid value is {enum_obj.__class__}"
+                            )
                             skip_controlnet = True
                             break
                         unit[k] = type(getattr(u, k))(v)
-                if not skip_controlnet: # valid 
+                if not skip_controlnet:  # valid
                     unit = UiControlNetUnit(**unit)
-            if not skip_controlnet: # valid
+            if not skip_controlnet:  # valid
                 script_args[i] = unit
 
     return script_args
@@ -230,7 +242,11 @@ def map_controlnet_args_to_api_task_args(args: Dict):
         if k == "image" and v is not None:
             args[k] = {
                 "image": encode_image_to_base64(v["image"]),
-                "mask": encode_image_to_base64(v["mask"]) if v.get("mask", None) is not None else None,
+                "mask": (
+                    encode_image_to_base64(v["mask"])
+                    if v.get("mask", None) is not None
+                    else None
+                ),
             }
         if isinstance(v, Enum):
             args[k] = v.value
@@ -256,15 +272,21 @@ def map_ui_task_args_list_to_named_args(args: List, is_img2img: bool):
     override_settings_texts: List[str] = named_args.get("override_settings_texts", [])
     # add clip_skip if not exist in args (vlad fork has this arg)
     if named_args.get("clip_skip", None) is None:
-        clip_skip = next((s for s in override_settings_texts if s.startswith("Clip skip:")), None)
+        clip_skip = next(
+            (s for s in override_settings_texts if s.startswith("Clip skip:")), None
+        )
         if clip_skip is None and hasattr(shared.opts, "CLIP_stop_at_last_layers"):
-            override_settings_texts.append(f"Clip skip: {shared.opts.CLIP_stop_at_last_layers}")
+            override_settings_texts.append(
+                f"Clip skip: {shared.opts.CLIP_stop_at_last_layers}"
+            )
 
     named_args["override_settings_texts"] = override_settings_texts
 
     sampler_index = named_args.get("sampler_index", None)
     if sampler_index is not None:
-        available_samplers = sd_samplers.samplers_for_img2img if is_img2img else sd_samplers.samplers
+        available_samplers = (
+            sd_samplers.samplers_for_img2img if is_img2img else sd_samplers.samplers
+        )
         sampler_name = available_samplers[named_args["sampler_index"]].name
         named_args["sampler_name"] = sampler_name
         log.debug(f"serialize sampler index: {str(sampler_index)} as {sampler_name}")
@@ -275,7 +297,9 @@ def map_ui_task_args_list_to_named_args(args: List, is_img2img: bool):
     )
 
 
-def map_named_args_to_ui_task_args_list(named_args: Dict, script_args: List, is_img2img: bool):
+def map_named_args_to_ui_task_args_list(
+    named_args: Dict, script_args: List, is_img2img: bool
+):
     fn = (
         getattr(img2img, "img2img_create_processing", img2img.img2img)
         if is_img2img
@@ -285,8 +309,12 @@ def map_named_args_to_ui_task_args_list(named_args: Dict, script_args: List, is_
 
     sampler_name = named_args.get("sampler_name", None)
     if sampler_name is not None:
-        available_samplers = sd_samplers.samplers_for_img2img if is_img2img else sd_samplers.samplers
-        sampler_index = next((i for i, x in enumerate(available_samplers) if x.name == sampler_name), 0)
+        available_samplers = (
+            sd_samplers.samplers_for_img2img if is_img2img else sd_samplers.samplers
+        )
+        sampler_index = next(
+            (i for i, x in enumerate(available_samplers) if x.name == sampler_name), 0
+        )
         named_args["sampler_index"] = sampler_index
 
     args = [named_args.get(name, None) for name in arg_names]
@@ -314,7 +342,9 @@ def map_script_args_list_to_named(script: scripts.Script, args: List):
     return named_script_args
 
 
-def map_named_script_args_to_list(script: scripts.Script, named_args: Union[dict, list]):
+def map_named_script_args_to_list(
+    script: scripts.Script, named_args: Union[dict, list]
+):
     script_name = script.title().lower()
 
     if isinstance(named_args, dict):
@@ -335,7 +365,9 @@ def map_named_script_args_to_list(script: scripts.Script, named_args: Union[dict
         return named_args
 
 
-def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_img2img: bool):
+def map_ui_task_args_to_api_task_args(
+    named_args: Dict, script_args: List, is_img2img: bool
+):
     api_task_args: Dict = named_args.copy()
 
     prompt_styles = api_task_args.pop("prompt_styles", [])
@@ -345,7 +377,9 @@ def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_im
     api_task_args["sampler_name"] = sd_samplers.samplers[sampler_index].name
 
     override_settings_texts = api_task_args.pop("override_settings_texts", [])
-    api_task_args["override_settings"] = create_override_settings_dict(override_settings_texts)
+    api_task_args["override_settings"] = create_override_settings_dict(
+        override_settings_texts
+    )
 
     if is_img2img:
         mode = api_task_args.pop("mode", 0)
@@ -370,7 +404,9 @@ def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_im
             mask = init_img_with_mask.get("mask", None)
             if mask:
                 alpha_mask = (
-                    ImageOps.invert(image.split()[-1]).convert("L").point(lambda x: 255 if x > 0 else 0, mode="1")
+                    ImageOps.invert(image.split()[-1])
+                    .convert("L")
+                    .point(lambda x: 255 if x > 0 else 0, mode="1")
                 )
                 mask = ImageChops.lighter(alpha_mask, mask.convert("L")).convert("L")
         elif mode == 3:
@@ -403,7 +439,9 @@ def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_im
     else:
         hr_sampler_index = api_task_args.pop("hr_sampler_index", 0)
         api_task_args["hr_sampler_name"] = (
-            sd_samplers.samplers_for_img2img[hr_sampler_index - 1].name if hr_sampler_index != 0 else None
+            sd_samplers.samplers_for_img2img[hr_sampler_index - 1].name
+            if hr_sampler_index != 0
+            else None
         )
 
     # script
@@ -416,7 +454,9 @@ def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_im
         script: scripts.Script = script_runner.selectable_scripts[script_id - 1]
         api_task_args["script_name"] = script.title().lower()
         current_script_args = script_args[script.args_from : script.args_to]
-        api_task_args["script_args"] = map_script_args_list_to_named(script, current_script_args)
+        api_task_args["script_args"] = map_script_args_list_to_named(
+            script, current_script_args
+        )
 
     # alwayson scripts
     alwayson_scripts = api_task_args.get("alwayson_scripts", None)
@@ -428,7 +468,9 @@ def map_ui_task_args_to_api_task_args(named_args: Dict, script_args: List, is_im
         alwayson_script_args = script_args[script.args_from : script.args_to]
         script_name = script.title().lower()
         if script_name != "agent scheduler":
-            named_script_args = map_script_args_list_to_named(script, alwayson_script_args)
+            named_script_args = map_script_args_list_to_named(
+                script, alwayson_script_args
+            )
             alwayson_scripts[script_name] = {"args": named_script_args}
 
     return api_task_args
@@ -455,7 +497,9 @@ def serialize_api_task_args(
     assert type(alwayson_scripts) is dict
 
     script_runner = scripts.scripts_img2img if is_img2img else scripts.scripts_txt2img
-    allowed_alwayson_scripts = {s.title().lower(): s for s in script_runner.alwayson_scripts}
+    allowed_alwayson_scripts = {
+        s.title().lower(): s for s in script_runner.alwayson_scripts
+    }
 
     valid_alwayson_scripts = {}
     for script_name, script_args in alwayson_scripts.items():
@@ -463,7 +507,9 @@ def serialize_api_task_args(
             continue
 
         if script_name.lower() not in allowed_alwayson_scripts:
-            log.warning(f"Script {script_name} is not in script_runner.alwayson_scripts")
+            log.warning(
+                f"Script {script_name} is not in script_runner.alwayson_scripts"
+            )
             continue
 
         script = allowed_alwayson_scripts[script_name.lower()]
@@ -474,7 +520,9 @@ def serialize_api_task_args(
     params["alwayson_scripts"] = valid_alwayson_scripts
 
     args = (
-        StableDiffusionImg2ImgProcessingAPI(**params) if is_img2img else StableDiffusionTxt2ImgProcessingAPI(**params)
+        StableDiffusionImg2ImgProcessingAPI(**params)
+        if is_img2img
+        else StableDiffusionTxt2ImgProcessingAPI(**params)
     )
 
     if args.override_settings is None:
