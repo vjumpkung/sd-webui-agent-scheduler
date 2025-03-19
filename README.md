@@ -60,7 +60,7 @@ This version of AgentScheduler is compatible with latest versions of:
 
 1. Open the Extensions tab
 2. Open the "Install From URL" sub-tab
-3. Paste the repo url: https://github.com/ArtVentureX/sd-webui-agent-scheduler.git
+3. Paste the repo url: https://github.com/vjumpkung/sd-webui-agent-scheduler.git
 4. Click "Install"
 
 ![Install](https://github.com/ArtVentureX/sd-webui-agent-scheduler/assets/133728487/f0fa740b-392a-4dd6-abe1-49c770ea60da)
@@ -68,7 +68,7 @@ This version of AgentScheduler is compatible with latest versions of:
 ### Manual clone
 
 ```bash
-git clone "https://github.com/ArtVentureX/sd-webui-agent-scheduler.git" extensions/agent-scheduler
+git clone "https://github.com/vjumpkung/sd-webui-agent-scheduler.git" extensions/agent-scheduler
 ```
 
 (The second argument specifies the name of the folder, you can choose whatever you like).
