@@ -63,7 +63,7 @@ This version of AgentScheduler is compatible with latest versions of:
 3. Paste the repo url: https://github.com/vjumpkung/sd-webui-agent-scheduler.git
 4. Click "Install"
 
-![Install](https://github.com/ArtVentureX/sd-webui-agent-scheduler/assets/133728487/f0fa740b-392a-4dd6-abe1-49c770ea60da)
+![Install](docs/images/install.png)
 
 ### Manual clone
 
